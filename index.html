@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CricLive – Live Cricket Scores</title>
+<style>
+:root{
+  --green:#057a4e; --green-dark:#045a3a; --bg:#edf1ed; --card:#ffffff;
+  --ink:#1b1e1b; --muted:#687068; --line:#e1e6e1;
+  --red:#c62828; --blue:#1565c0; --gold:#a86e12;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom)}
+header.top{position:sticky;top:0;z-index:60;background:var(--green);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+header.top .logo{font-weight:800;font-size:20px;letter-spacing:.3px}
+header.top .logo span{font-weight:400;opacity:.85;font-size:13px;display:block;letter-spacing:.6px}
+header.top .spacer{flex:1}
+.icon-btn{background:rgba(255,255,255,.14);border:0;color:#fff;width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.icon-btn:active{background:rgba(255,255,255,.28)}
+.subtabs{position:sticky;top:62px;z-index:55;background:var(--green-dark);display:flex;padding:0 8px}
+.subtabs button{flex:1;background:none;border:0;color:#cfe6da;font-size:14px;font-weight:600;padding:12px 4px;cursor:pointer;border-bottom:3px solid transparent}
+.subtabs button.active{color:#fff;border-bottom-color:#fff}
+main{max-width:720px;margin:0 auto;padding:12px 12px 32px}
+.card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
+.card:active{background:#f6f8f6}
+.match-teams{font-weight:700;font-size:15px;margin-bottom:6px}
+.scoreline{font-size:14px;color:var(--ink);margin:2px 0}
+.scoreline b{font-weight:700}
+.status{font-size:13px;color:var(--muted);margin-top:6px}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e53935;margin-right:6px;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero{background:var(--green-dark);color:#fff;border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.hero .mname{font-size:13px;opacity:.85;margin-bottom:8px}
+.hero .teamscore{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0}
+.hero .tname{font-weight:700;font-size:16px}
+.hero .tscore{font-weight:800;font-size:20px;font-variant-numeric:tabular-nums}
+.hero .mstatus{font-size:13px;margin-top:10px;color:#ffe9a8;font-weight:600}
+.hero .updated{font-size:11px;opacity:.7;margin-top:6px}
+.refrow{display:flex;gap:8px;margin-bottom:10px}
+.btn{flex:1;border:0;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--green);color:#fff}
+.btn.ghost{background:#fff;color:var(--green);border:1px solid var(--line)}
+.btn:active{opacity:.85}
+.mtabs{position:sticky;top:62px;z-index:55;background:var(--bg);display:flex;gap:8px;padding:10px 0}
+.mtabs button{flex:1;border:1px solid var(--line);background:#fff;border-radius:20px;padding:9px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+.mtabs button.active{background:var(--green);border-color:var(--green);color:#fff}
+.over-group{margin-bottom:14px}
+.over-head{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;margin-bottom:6px;color:var(--green-dark)}
+.ball{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;border-left:4px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ball.wicket{border-left-color:var(--red)}
+.ball.four{border-left-color:var(--blue)}
+.ball.six{border-left-color:var(--gold)}
+.ball .bnum{font-weight:800;font-size:12px;color:var(--muted);margin-right:8px;font-variant-numeric:tabular-nums}
+.ball .btext{font-size:14px;line-height:1.45}
+.ball .btext b{font-weight:700}
+.tag{display:inline-block;font-size:10px;font-weight:800;border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:1px;color:#fff}
+.tag.w{background:var(--red)} .tag.n4{background:var(--blue)} .tag.n6{background:var(--gold)}
+table.score{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;margin-bottom:6px}
+table.score th{background:#f2f5f2;text-align:left;padding:8px 8px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+table.score td{padding:8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.score td.num,table.score th.num{text-align:right}
+.inn-head{font-weight:800;font-size:14px;margin:14px 0 6px;color:var(--green-dark)}
+.dismiss{color:var(--muted);font-size:12px}
+.info-row{display:flex;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.info-row:last-child{border-bottom:0}
+.info-row .k{width:130px;flex:none;color:var(--muted);font-weight:600}
+.banner{background:#fff8e1;border:1px solid #f0dfa8;border-radius:12px;padding:14px;margin-bottom:12px;font-size:14px;line-height:1.5}
+.banner b{color:#7a5c00}
+.banner a{color:var(--green);font-weight:700}
+.err{background:#fdecea;border:1px solid #f5c6c6;color:#8f1d1d;border-radius:12px;padding:14px;margin-bottom:12px;font-size:14px;line-height:1.5}
+.empty{text-align:center;color:var(--muted);padding:40px 16px;font-size:14px}
+.modal-veil{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px 18px 30px;width:100%;max-width:520px}
+.modal h3{margin:0 0 10px;font-size:17px}
+.modal p{font-size:13.5px;color:var(--muted);line-height:1.55}
+.modal input{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:15px;margin:8px 0}
+.modal .row{display:flex;gap:8px;margin-top:10px}
+.spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;margin:40px auto;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.backlink{display:inline-block;margin-bottom:10px;color:var(--green);font-weight:700;font-size:14px;cursor:pointer;background:none;border:0;padding:4px 0}
+.squad{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.squad span{background:#f2f5f2;border-radius:14px;padding:5px 10px;font-size:12.5px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">CricLive<span>LIVE CRICKET SCORES</span></div>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="settingsBtn" aria-label="Settings">&#9881;</button>
+</header>
+<div class="subtabs" id="homeTabs" style="display:none">
+  <button data-tab="live" class="active">Live</button>
+  <button data-tab="upcoming">Upcoming</button>
+  <button data-tab="recent">Recent</button>
+</div>
+<main id="app"></main>
+<div id="modalRoot"></div>
+<script>
+"use strict";
+/* ============================== state ============================== */
+const API_BASE = "https://api.cricapi.com/v1";
+const state = {
+  view: "home",       // home | match
+  homeTab: "live",
+  matchId: null,
+  matchTab: "commentary",
+  key: "",
+  matches: [],
+  matchInfo: null,
+  scorecard: null,
+  overs: null,
+  lastFetch: 0,
+  timer: null,
+  err: null,
+  demo: true
+};
+try {
+  state.key = localStorage.getItem("criclive_key") || "";
+} catch (e) { state.key = ""; }
+state.demo = !state.key;
+
+/* ============================== helpers ============================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function pick(o) {
+  for (let i = 1; i < arguments.length; i++) {
+    const k = arguments[i];
+    if (o && o[k] !== undefined && o[k] !== null && o[k] !== "") return o[k];
+  }
+  return "";
+}
+function shortName(teamInfo, fallback) {
+  const t = (teamInfo || []).find(t => (t.name || "").toLowerCase() === String(fallback || "").toLowerCase());
+  if (t && t.shortname) return t.shortname;
+  const f = String(fallback || "").replace(/[^A-Za-z]/g, "");
+  return (f.substring(0, 3) || "???").toUpperCase();
+}
+function fmtScore(s) {
+  if (!s) return "";
+  const r = pick(s, "r", "runs"), w = pick(s, "w", "wickets"), o = pick(s, "o", "overs");
+  if (r === "" && w === "" && o === "") return "";
+  return r + "/" + w + (o !== "" ? " (" + o + ")" : "");
+}
+function scoreSummary(m) {
+  const sc = m.score || [];
+  const ti = m.teamInfo || m.teaminfo || [];
+  const parts = sc.map(s => {
+    const inn = pick(s, "inning", "innings");
+    const team = inn ? shortName(ti, inn.replace(/ inning.*$/i, "")) : "";
+    return (team ? team + " " : "") + fmtScore(s);
+  });
+  return parts.filter(Boolean).join(" &nbsp;&bull;&nbsp; ");
+}
+function timeAgo(ts) {
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  if (s < 10) return "just now";
+  if (s < 60) return s + "s ago";
+  const m = Math.floor(s / 60);
+  return m + "m ago";
+}
+function matchDate(m) {
+  const d = pick(m, "dateTimeGMT", "date");
+  if (!d) return "";
+  try { return new Date(d).toLocaleString(); } catch (e) { return d; }
+}
+/* ============================== api ============================== */
+async function api(path) {
+  const url = API_BASE + "/" + path + (path.indexOf("?") >= 0 ? "&" : "?") + "apikey=" + encodeURIComponent(state.key);
+  let res;
+  try { res = await fetch(url); }
+  catch (e) { throw { code: "network" }; }
+  let j;
+  try { j = await res.json(); }
+  catch (e) { throw { code: "network" }; }
+  if (j && j.status === "failure") {
+    const reason = String(j.reason || "").toLowerCase();
+    if (reason.indexOf("invalid api key") >= 0) throw { code: "badkey" };
+    if (reason.indexOf("quota") >= 0 || reason.indexOf("limit") >= 0 || reason.indexOf("credit") >= 0) throw { code: "quota" };
+    throw { code: "api", msg: j.reason };
+  }
+  return (j && j.data !== undefined) ? j.data : j;
+}
+function errMsg(e) {
+  if (!e) return "";
+  if (e.code === "badkey") return "That API key didn't work. Open Settings (gear icon) and check the key you pasted from cricapi.com.";
+  if (e.code === "quota") return "The free API quota is used up for today. It resets daily — or check Settings for your key status.";
+  if (e.code === "network") return "Couldn't reach the scores server. Check your internet connection and try again.";
+  return "Something went wrong: " + esc(e.msg || "unknown error");
+}
+
+/* ============================== demo data ============================== */
+function demoMatches() {
+  return [
+    { id: "demo1", name: "Mumbai Indians vs Chennai Super Kings, 24th Match", matchType: "t20",
+      status: "Chennai need 42 runs in 26 balls", venue: "Wankhede Stadium, Mumbai",
+      date: "2026-10-11", dateTimeGMT: new Date().toISOString(),
+      teams: ["Mumbai Indians", "Chennai Super Kings"],
+      teamInfo: [{ name: "Mumbai Indians", shortname: "MI" }, { name: "Chennai Super Kings", shortname: "CSK" }],
+      score: [{ r: 186, w: 4, o: 20, inning: "Mumbai Indians Inning 1" }, { r: 145, w: 3, o: 15.4, inning: "Chennai Super Kings Inning 1" }],
+      matchStarted: true, matchEnded: false },
+    { id: "demo2", name: "India vs Australia, 2nd ODI", matchType: "odi",
+      status: "Match starts in 3 hrs", venue: "Eden Gardens, Kolkata",
+      date: "2026-10-11", dateTimeGMT: new Date(Date.now() + 3 * 360e4).toISOString(),
+      teams: ["India", "Australia"],
+      teamInfo: [{ name: "India", shortname: "IND" }, { name: "Australia", shortname: "AUS" }],
+      score: [], matchStarted: false, matchEnded: false },
+    { id: "demo3", name: "England vs New Zealand, 1st Test - Day 3", matchType: "test",
+      status: "England won by 6 wickets", venue: "Lord's, London",
+      date: "2026-10-08", dateTimeGMT: new Date(Date.now() - 3 * 864e5).toISOString(),
+      teams: ["England", "New Zealand"],
+      teamInfo: [{ name: "England", shortname: "ENG" }, { name: "New Zealand", shortname: "NZ" }],
+      score: [{ r: 342, w: 10, o: 98.2, inning: "New Zealand Inning 1" }, { r: 389, w: 10, o: 104.5, inning: "England Inning 1" },
+              { r: 210, w: 10, o: 71.3, inning: "New Zealand Inning 2" }, { r: 167, w: 4, o: 52.1, inning: "England Inning 2" }],
+      matchStarted: true, matchEnded: true }
+  ];
+}
+function demoMatchInfo() {
+  return { name: "Mumbai Indians vs Chennai Super Kings, 24th Match", matchType: "t20",
+    status: "Chennai need 42 runs in 26 balls", venue: "Wankhede Stadium, Mumbai",
+    date: "2026-10-11", dateTimeGMT: new Date().toISOString(),
+    teams: ["Mumbai Indians", "Chennai Super Kings"],
+    tossWinner: "Mumbai Indians", tossChoice: "bat",
+    umpires: "Nitin Menon, Richard Illingworth", referee: "Javagal Srinath" };
+}
+function demoScorecard() {
+  const bat = (name, dis, r, b, f4, f6) => ({ batsman: { name }, "dismissal-text": dis, r, b, "4s": f4, "6s": f6, sr: b ? ((r / b) * 100).toFixed(2) : "0.00" });
+  const bowl = (name, o, m, r, w) => ({ bowler: { name }, o, m, r, w, eco: o ? (r / parseFloat(o)).toFixed(2) : "0.00" });
+  return [
+    { inning: "Mumbai Indians Inning 1",
+      batting: [bat("Rohit Sharma (c)", "c Jadeja b Pathirana", 68, 42, 8, 2), bat("Ishan Kishan (w)", "b Theekshana", 34, 22, 5, 1),
+                bat("Suryakumar Yadav", "not out", 52, 28, 4, 3), bat("Tilak Varma", "run out (Dhoni)", 18, 12, 2, 0),
+                bat("Hardik Pandya", "not out", 9, 6, 1, 0)],
+      bowling: [bowl("Deepak Chahar", "4", 0, 38, 0), bowl("Matheesha Pathirana", "4", 0, 41, 1),
+                bowl("Ravindra Jadeja", "4", 0, 32, 0), bowl("Maheesh Theekshana", "4", 0, 36, 1), bowl("Tushar Deshpande", "4", 0, 39, 0)] },
+    { inning: "Chennai Super Kings Inning 1",
+      batting: [bat("Ruturaj Gaikwad (c)", "c David b Bumrah", 45, 30, 6, 1), bat("Devon Conway", "lbw b Chahar", 28, 20, 3, 1),
+                bat("Shivam Dube", "batting", 52, 28, 4, 3), bat("MS Dhoni (w)", "batting", 12, 8, 1, 0)],
+      bowling: [bowl("Jasprit Bumrah", "3.4", 0, 28, 1), bowl("Trent Boult", "4", 0, 35, 0),
+                bowl("Deepak Chahar", "4", 0, 42, 1), bowl("Piyush Chawla", "4", 0, 40, 0)] }
+  ];
+}
+function demoOvers() {
+  const D = (ball, batter, bowler, runs, text, extra) => ({ ballNumber: ball, batter, bowler, runs, text, wicket: !!extra && extra.wicket, four: runs === 4, six: runs === 6 });
+  return [
+    { overNumber: 16, deliveries: [
+      D("15.1", "Shivam Dube", "Jasprit Bumrah", 1, "length ball on off, pushed to long-on for a single"),
+      D("15.2", "Ruturaj Gaikwad", "Jasprit Bumrah", 4, "FOUR! Short and wide, Gaikwad cuts it hard past point"),
+      D("15.3", "Ruturaj Gaikwad", "Jasprit Bumrah", 0, "yorker! Dug out back to the bowler"),
+      D("15.4", "Ruturaj Gaikwad", "Jasprit Bumrah", 6, "SIX! Picked the slower ball and launched it over long-on"),
+      D("15.5", "Ruturaj Gaikwad", "Jasprit Bumrah", 1, "driven to mid-off, quick single"),
+      D("15.6", "Shivam Dube", "Jasprit Bumrah", 2, "worked off the pads, they come back for two") ] },
+    { overNumber: 15, deliveries: [
+      D("14.1", "Devon Conway", "Deepak Chahar", 1, "nudged to mid-wicket for one"),
+      D("14.2", "Ruturaj Gaikwad", "Deepak Chahar", 4, "FOUR! Edged... and it races away past the keeper"),
+      D("14.3", "Ruturaj Gaikwad", "Deepak Chahar", 0, "beaten! Slower ball grips and goes past the edge"),
+      D("14.4", "Ruturaj Gaikwad", "Deepak Chahar", 1, "dropped to cover-point, single"),
+      D("14.5", "Devon Conway", "Deepak Chahar", 0, "OUT! LBW! Chahar strikes, Conway trapped in front", { wicket: true }),
+      D("14.6", "Shivam Dube", "Deepak Chahar", 6, "SIX! First ball, Dube goes big over midwicket") ] },
+    { overNumber: 14, deliveries: [
+      D("13.1", "Ruturaj Gaikwad", "Piyush Chawla", 1, "flighted, driven to long-off"),
+      D("13.2", "Devon Conway", "Piyush Chawla", 2, "swept fine, two runs"),
+      D("13.3", "Devon Conway", "Piyush Chawla", 4, "FOUR! Reverse swept to the third-man fence"),
+      D("13.4", "Devon Conway", "Piyush Chawla", 1, "pushed to cover"),
+      D("13.5", "Ruturaj Gaikwad", "Piyush Chawla", 0, "turn and bounce, defended"),
+      D("13.6", "Ruturaj Gaikwad", "Piyush Chawla", 1, "worked to deep square leg") ] }
+  ];
+}
+/* ============================== data loading ============================== */
+async function loadMatches() {
+  state.err = null;
+  if (state.demo) { state.matches = demoMatches(); return; }
+  state.matches = await api("currentMatches?offset=0");
+}
+async function loadMatchAll(id) {
+  state.err = null;
+  if (state.demo) {
+    state.matchInfo = demoMatchInfo();
+    state.scorecard = demoScorecard();
+    state.overs = demoOvers();
+    state.lastFetch = Date.now();
+    return;
+  }
+  const [info, sc] = await Promise.all([api("match_info?id=" + encodeURIComponent(id)), api("match_scorecard?id=" + encodeURIComponent(id))]);
+  state.matchInfo = info || {};
+  state.scorecard = (sc && sc.scorecard) || sc || [];
+  try { state.overs = await api("match_bbb?id=" + encodeURIComponent(id)); }
+  catch (e) {
+    try { state.overs = await api("match_overs?id=" + encodeURIComponent(id)); }
+    catch (e2) { state.overs = null; }
+  }
+  state.lastFetch = Date.now();
+}
+function isLive(m) {
+  const s = String(pick(m, "status", "")).toLowerCase();
+  if (s.indexOf("won by") >= 0 || s.indexOf("match drawn") >= 0 || s.indexOf("no result") >= 0) return false;
+  return !!m.matchStarted && !m.matchEnded;
+}
+function isUpcoming(m) { return !m.matchStarted && !m.matchEnded; }
+
+/* ============================== home view ============================== */
+function matchCard(m) {
+  const live = isLive(m);
+  const teams = (m.teams || []).join(" vs ");
+  return '<div class="card" data-id="' + esc(m.id) + '">' +
+    '<div class="match-teams">' + (live ? '<span class="live-dot"></span>' : "") + esc(m.name || teams) + "</div>" +
+    '<div class="scoreline"><b>' + scoreSummary(m) + "</b></div>" +
+    '<div class="status">' + esc(pick(m, "status", "")) + (m.venue ? " &bull; " + esc(m.venue) : "") + "</div>" +
+    "</div>";
+}
+function renderHome() {
+  $("#homeTabs").style.display = "flex";
+  document.querySelectorAll("#homeTabs button").forEach(b => b.classList.toggle("active", b.dataset.tab === state.homeTab));
+  const app = $("#app");
+  if (state.err) { app.innerHTML = '<div class="err">' + errMsg(state.err) + "</div>"; return; }
+  if (!state.matches) { app.innerHTML = '<div class="spinner"></div>'; return; }
+  let list = state.matches.slice();
+  if (state.homeTab === "live") list = list.filter(isLive);
+  else if (state.homeTab === "upcoming") list = list.filter(isUpcoming);
+  else list = list.filter(m => m.matchEnded);
+  let html = "";
+  if (state.demo) html += '<div class="banner"><b>Demo mode.</b> Add your free API key in Settings (gear icon) for real live scores. Get one free at <a href="https://cricketdata.org" target="_blank" rel="noopener">cricketdata.org</a> (free plan: 100 calls/day).</div>';
+  if (!list.length) html += '<div class="empty">No ' + state.homeTab + " matches right now.</div>";
+  else html += list.map(matchCard).join("");
+  app.innerHTML = html;
+  app.querySelectorAll(".card").forEach(c => c.addEventListener("click", () => openMatch(c.dataset.id)));
+}
+async function refreshHome() {
+  const app = $("#app");
+  app.innerHTML = '<div class="spinner"></div>';
+  try { await loadMatches(); }
+  catch (e) { state.err = e; state.matches = []; }
+  renderHome();
+}
+
+/* ============================== match view ============================== */
+function heroHTML(m) {
+  const info = state.matchInfo || m || {};
+  const sc = (info.score && info.score.length ? info.score : (m.score || []));
+  const ti = info.teamInfo || info.teaminfo || m.teamInfo || m.teaminfo || [];
+  const rows = sc.map(s => {
+    const inn = pick(s, "inning", "innings");
+    const team = inn ? shortName(ti, inn.replace(/ inning.*$/i, "")) : "";
+    return '<div class="teamscore"><span class="tname">' + esc(team || inn || "") + '</span><span class="tscore">' + esc(fmtScore(s)) + "</span></div>";
+  }).join("");
+  const live = isLive(Object.assign({}, m, info));
+  return '<div class="hero"><div class="mname">' + esc(pick(info, "name", m.name)) + "</div>" + rows +
+    '<div class="mstatus">' + (live ? '<span class="live-dot"></span>' : "") + esc(pick(info, "status", m.status)) + "</div>" +
+    '<div class="updated">Updated ' + timeAgo(state.lastFetch) + (state.demo ? " &bull; demo data" : "") + "</div></div>";
+}
+async function openMatch(id) {
+  stopTimer();
+  state.view = "match"; state.matchId = id; state.matchTab = "commentary";
+  state.matchInfo = null; state.scorecard = null; state.overs = null; state.err = null;
+  $("#homeTabs").style.display = "none";
+  $("#app").innerHTML = '<div class="spinner"></div>';
+  try { await loadMatchAll(id); }
+  catch (e) { state.err = e; }
+  renderMatch();
+  const m = currentMatch();
+  if (m && isLive(m) && !state.demo) {
+    state.timer = setInterval(async () => {
+      try { await loadMatchAll(id); renderMatch(true); } catch (e) { /* keep old data on refresh failure */ }
+    }, 60000);
+  }
+}
+function stopTimer() { if (state.timer) { clearInterval(state.timer); state.timer = null; } }
+function currentMatch() {
+  return (state.matches || []).find(m => String(m.id) === String(state.matchId)) || {};
+}
+function renderMatch(soft) {
+  const m = currentMatch();
+  const app = $("#app");
+  let html = '<button class="backlink" id="backBtn">&larr; All matches</button>';
+  if (state.err && !state.matchInfo) { html += '<div class="err">' + errMsg(state.err) + "</div>"; }
+  else {
+    html += heroHTML(m);
+    html += '<div class="refrow"><button class="btn ghost" id="refBtn">Refresh scores</button></div>';
+    html += '<div class="mtabs">' +
+      ["commentary", "scorecard", "info"].map(t =>
+        '<button data-mtab="' + t + '" class="' + (state.matchTab === t ? "active" : "") + '">' +
+        t.charAt(0).toUpperCase() + t.slice(1) + "</button>").join("") + "</div>";
+    html += '<div id="mtabBody">' + matchTabHTML() + "</div>";
+  }
+  const keepScroll = soft && document.documentElement.scrollTop;
+  app.innerHTML = html;
+  if (keepScroll) window.scrollTo(0, keepScroll);
+  const bb = $("#backBtn"); if (bb) bb.addEventListener("click", () => { stopTimer(); state.view = "home"; renderHome(); });
+  const rb = $("#refBtn"); if (rb) rb.addEventListener("click", async () => { try { await loadMatchAll(state.matchId); } catch (e) { state.err = e; } renderMatch(); });
+  app.querySelectorAll("[data-mtab]").forEach(b => b.addEventListener("click", () => { state.matchTab = b.dataset.mtab; renderMatch(); }));
+}
+function matchTabHTML() {
+  if (state.matchTab === "scorecard") return scorecardHTML();
+  if (state.matchTab === "info") return infoHTML();
+  return commentaryHTML();
+}
+/* ============================== commentary ============================== */
+function normDeliveries(overs) {
+  // Accepts demo shape [{overNumber, deliveries:[...]}] and API shapes.
+  let groups = [];
+  if (Array.isArray(overs)) groups = overs;
+  else if (overs && Array.isArray(overs.overs)) groups = overs.overs;
+  else if (overs && Array.isArray(overs.data)) groups = overs.data;
+  const out = [];
+  groups.forEach(g => {
+    const dels = g.deliveries || g.balls || [];
+    const overNo = pick(g, "overNumber", "over", "over_number");
+    dels.forEach(d => {
+      const ball = pick(d, "ballNumber", "ball_number", "ball");
+      const batter = pick((d.batter && d.batter.name) ? d.batter : {}, "name") || pick(d, "batter", "batsman", "striker");
+      const bowler = pick((d.bowler && d.bowler.name) ? d.bowler : {}, "name") || pick(d, "bowler");
+      let runs = 0, wicket = false, extra = "";
+      if (d.runs && typeof d.runs === "object") { runs = +(d.runs.total ?? d.runs.batter ?? 0); }
+      else runs = +(pick(d, "runs", "total_runs", 0) || 0);
+      const wk = d.wicket || d.isWicket;
+      if (wk && wk !== false && wk !== "false" && wk !== 0) wicket = true;
+      if (pick(d, "wicket_type", "") || pick(d, "dismissal", "")) wicket = true;
+      extra = pick(d, "extras", "extra");
+      let text = pick(d, "text", "commentary", "desc");
+      if (!text) {
+        const bits = [];
+        if (wicket) bits.push("WICKET!");
+        else if (runs === 6) bits.push("SIX!");
+        else if (runs === 4) bits.push("FOUR!");
+        else if (runs === 0) bits.push("No run");
+        else bits.push(runs + (runs === 1 ? " run" : " runs"));
+        if (extra) bits.push("(" + extra + ")");
+        text = bits.join(" ");
+      }
+      out.push({ over: overNo, ball: ball, batter: batter, bowler: bowler, runs: runs, wicket: wicket, text: text });
+    });
+  });
+  return out;
+}
+function commentaryHTML() {
+  if (!state.overs) return '<div class="empty">Ball-by-ball data not available for this match.</div>';
+  const dels = normDeliveries(state.overs);
+  if (!dels.length) return '<div class="empty">Ball-by-ball data not available for this match.</div>';
+  const byOver = {};
+  dels.forEach(d => { const k = d.over || "?"; (byOver[k] = byOver[k] || []).push(d); });
+  const overs = Object.keys(byOver).sort((a, b) => parseFloat(b) - parseFloat(a));
+  return overs.map(o => {
+    const ds = byOver[o].slice().reverse();
+    const balls = ds.map(d => {
+      const cls = d.wicket ? "wicket" : d.runs === 6 ? "six" : d.runs === 4 ? "four" : "";
+      const tag = d.wicket ? '<span class="tag w">W</span>' : d.runs === 6 ? '<span class="tag n6">6</span>' : d.runs === 4 ? '<span class="tag n4">4</span>' : "";
+      const who = (d.bowler && d.batter) ? "<b>" + esc(d.bowler) + "</b> to <b>" + esc(d.batter) + "</b>, " : "";
+      return '<div class="ball ' + cls + '"><span class="bnum">' + esc(d.ball) + '</span><span class="btext">' + who + esc(d.text) + tag + "</span></div>";
+    }).join("");
+    return '<div class="over-group"><div class="over-head">Over ' + esc(o) + "</div>" + balls + "</div>";
+  }).join("");
+}
+
+/* ============================== scorecard ============================== */
+function scorecardHTML() {
+  const sc = state.scorecard;
+  if (!sc || !sc.length) return '<div class="empty">Scorecard not available for this match.</div>';
+  return sc.map(inn => {
+    const title = pick(inn, "inning", "innings", "title") || "Innings";
+    let h = '<div class="inn-head">' + esc(title) + "</div>";
+    const bat = inn.batting || inn.batsmen || [];
+    if (bat.length) {
+      h += '<table class="score"><tr><th>Batter</th><th class="num">R</th><th class="num">B</th><th class="num">4s</th><th class="num">6s</th><th class="num">SR</th></tr>';
+      bat.forEach(b => {
+        const nm = pick((b.batsman && b.batsman.name) ? b.batsman : {}, "name") || pick(b, "batsman", "name", "player");
+        const dis = pick(b, "dismissal-text", "dismissal", "how_out");
+        h += "<tr><td>" + esc(nm) + (dis && dis.toLowerCase().indexOf("not out") < 0 && dis.toLowerCase().indexOf("batting") < 0 ? '<div class="dismiss">' + esc(dis) + "</div>" : "") +
+          '</td><td class="num"><b>' + esc(pick(b, "r", "runs")) + "</b></td>" +
+          '<td class="num">' + esc(pick(b, "b", "balls")) + "</td>" +
+          '<td class="num">' + esc(pick(b, "4s", "fours")) + "</td>" +
+          '<td class="num">' + esc(pick(b, "6s", "sixes")) + "</td>" +
+          '<td class="num">' + esc(pick(b, "sr", "strikeRate")) + "</td></tr>";
+      });
+      h += "</table>";
+    }
+    const bowl = inn.bowling || inn.bowlers || [];
+    if (bowl.length) {
+      h += '<table class="score"><tr><th>Bowler</th><th class="num">O</th><th class="num">M</th><th class="num">R</th><th class="num">W</th><th class="num">Econ</th></tr>';
+      bowl.forEach(b => {
+        const nm = pick((b.bowler && b.bowler.name) ? b.bowler : {}, "name") || pick(b, "bowler", "name", "player");
+        h += "<tr><td>" + esc(nm) + '</td><td class="num">' + esc(pick(b, "o", "overs")) + "</td>" +
+          '<td class="num">' + esc(pick(b, "m", "maidens")) + "</td>" +
+          '<td class="num">' + esc(pick(b, "r", "runs")) + "</td>" +
+          '<td class="num"><b>' + esc(pick(b, "w", "wickets")) + "</b></td>" +
+          '<td class="num">' + esc(pick(b, "eco", "econ", "economy")) + "</td></tr>";
+      });
+      h += "</table>";
+    }
+    return h;
+  }).join("");
+}
+
+/* ============================== info ============================== */
+function infoHTML() {
+  const i = state.matchInfo || {};
+  const rows = [
+    ["Match", pick(i, "name")],
+    ["Type", (pick(i, "matchType") || "").toUpperCase()],
+    ["Venue", pick(i, "venue")],
+    ["Date", matchDate(i)],
+    ["Status", pick(i, "status")],
+    ["Toss", (function () { const w = pick(i, "tossWinner"); return w ? w + " chose to " + pick(i, "tossChoice") : ""; })()],
+    ["Winner", pick(i, "matchWinner")],
+    ["Umpires", pick(i, "umpires")],
+    ["Referee", pick(i, "referee")]
+  ].filter(r => r[1]);
+  let h = '<div class="card" style="cursor:default">' + rows.map(r =>
+    '<div class="info-row"><span class="k">' + esc(r[0]) + "</span><span>" + esc(r[1]) + "</span></div>").join("") + "</div>";
+  const squads = i.squads || i.playingXI || null;
+  if (squads) {
+    h += '<div class="card" style="cursor:default"><div class="inn-head" style="margin-top:0">Squads</div>';
+    (Array.isArray(squads) ? squads : Object.keys(squads)).forEach(k => {
+      const team = Array.isArray(squads) ? k : k;
+      const nm = team.name || team.team || k;
+      const players = team.players || team.squad || [];
+      h += '<div class="info-row"><span class="k">' + esc(nm) + '</span><span class="squad">' +
+        players.map(p => "<span>" + esc(p.name || p) + "</span>").join("") + "</span></div>";
+    });
+    h += "</div>";
+  }
+  return h;
+}
+
+/* ============================== settings ============================== */
+function openSettings() {
+  const root = $("#modalRoot");
+  root.innerHTML = '<div class="modal-veil" id="veil"><div class="modal">' +
+    "<h3>API Settings</h3>" +
+    "<p>CricLive uses the free Cricket Data API (formerly CricAPI) for live scores. Get a free key at <a href='https://cricketdata.org' target='_blank' rel='noopener'>cricketdata.org</a> (signup takes a minute; free plan includes 100 API calls/day), paste it below, and the app switches from demo data to real live matches.</p>" +
+    '<input id="keyInput" type="text" placeholder="Paste your API key" value="' + esc(state.key) + '">' +
+    '<div class="row"><button class="btn primary" id="saveKey">Save key</button>' +
+    '<button class="btn ghost" id="useDemo">Use demo</button>' +
+    '<button class="btn ghost" id="closeModal">Close</button></div></div></div>';
+  $("#veil").addEventListener("click", e => { if (e.target.id === "veil") root.innerHTML = ""; });
+  $("#closeModal").addEventListener("click", () => { root.innerHTML = ""; });
+  $("#useDemo").addEventListener("click", () => {
+    state.key = ""; state.demo = true;
+    try { localStorage.removeItem("criclive_key"); } catch (e) {}
+    root.innerHTML = ""; boot(true);
+  });
+  $("#saveKey").addEventListener("click", () => {
+    const v = $("#keyInput").value.trim();
+    state.key = v; state.demo = !v;
+    try { if (v) localStorage.setItem("criclive_key", v); else localStorage.removeItem("criclive_key"); } catch (e) {}
+    root.innerHTML = ""; boot(true);
+  });
+}
+
+/* ============================== boot ============================== */
+async function boot(reset) {
+  stopTimer();
+  state.view = "home";
+  $("#homeTabs").style.display = "flex";
+  document.querySelectorAll("#homeTabs button").forEach(b =>
+    b.addEventListener("click", () => { state.homeTab = b.dataset.tab; renderHome(); }));
+  $("#settingsBtn").addEventListener("click", openSettings);
+  await refreshHome();
+}
+document.addEventListener("DOMContentLoaded", () => boot());
+</script>
+</body>
+</html>
