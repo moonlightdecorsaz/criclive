@@ -93,6 +93,7 @@ table.score td.num,table.score th.num{text-align:right}
   <button data-tab="live" class="active">Live</button>
   <button data-tab="upcoming">Upcoming</button>
   <button data-tab="recent">Recent</button>
+  <button data-tab="india">India</button>
 </div>
 <main id="app"></main>
 <div id="modalRoot"></div>
@@ -212,6 +213,13 @@ function demoMatches() {
       teamInfo: [{ name: "England", shortname: "ENG" }, { name: "New Zealand", shortname: "NZ" }],
       score: [{ r: 342, w: 10, o: 98.2, inning: "New Zealand Inning 1" }, { r: 389, w: 10, o: 104.5, inning: "England Inning 1" },
               { r: 210, w: 10, o: 71.3, inning: "New Zealand Inning 2" }, { r: 167, w: 4, o: 52.1, inning: "England Inning 2" }],
+      matchStarted: true, matchEnded: true },
+    { id: "demo4", name: "India vs England, 1st ODI", matchType: "odi",
+      status: "India won by 5 wickets", venue: "Wankhede Stadium, Mumbai",
+      date: "2026-10-09", dateTimeGMT: new Date(Date.now() - 2 * 864e5).toISOString(),
+      teams: ["India", "England"],
+      teamInfo: [{ name: "India", shortname: "IND" }, { name: "England", shortname: "ENG" }],
+      score: [{ r: 287, w: 10, o: 49.2, inning: "England Inning 1" }, { r: 288, w: 5, o: 47.3, inning: "India Inning 1" }],
       matchStarted: true, matchEnded: true }
   ];
 }
@@ -297,6 +305,19 @@ function isLive(m) {
   return !!m.matchStarted && !m.matchEnded;
 }
 function isUpcoming(m) { return !m.matchStarted && !m.matchEnded; }
+function isIndia(m) {
+  // Word-boundary match so "Mumbai Indians" / "West Indies" don't false-positive.
+  const re = /\bindia\b/i;
+  const teams = m.teams || [];
+  for (let i = 0; i < teams.length; i++) {
+    if (re.test(String(teams[i]))) return true;
+  }
+  return re.test(String(pick(m, "name", "")));
+}
+function indiaRank(a, b) {
+  const r = m => isLive(m) ? 0 : (isUpcoming(m) ? 1 : 2);
+  return r(a) - r(b);
+}
 
 /* ============================== home view ============================== */
 function matchCard(m) {
@@ -317,10 +338,12 @@ function renderHome() {
   let list = state.matches.slice();
   if (state.homeTab === "live") list = list.filter(isLive);
   else if (state.homeTab === "upcoming") list = list.filter(isUpcoming);
+  else if (state.homeTab === "india") list = list.filter(isIndia).sort(indiaRank);
   else list = list.filter(m => m.matchEnded);
   let html = "";
   if (state.demo) html += '<div class="banner"><b>Demo mode.</b> Add your free API key in Settings (gear icon) for real live scores. Get one free at <a href="https://cricketdata.org" target="_blank" rel="noopener">cricketdata.org</a> (free plan: 100 calls/day).</div>';
-  if (!list.length) html += '<div class="empty">No ' + state.homeTab + " matches right now.</div>";
+  const tabLabel = { live: "live", upcoming: "upcoming", recent: "recent", india: "India" }[state.homeTab] || state.homeTab;
+  if (!list.length) html += '<div class="empty">No ' + tabLabel + " matches right now.</div>";
   else html += list.map(matchCard).join("");
   app.innerHTML = html;
   app.querySelectorAll(".card").forEach(c => c.addEventListener("click", () => openMatch(c.dataset.id)));
